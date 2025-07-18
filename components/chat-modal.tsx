@@ -61,10 +61,7 @@ export function ChatModal({ isOpen, onClose, onMatchesUpdate }: ChatModalProps) 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!input.trim() || isLoading) return
-
-    console.log("\n\nSending message ====>> ", input)
-    
+    if (!input.trim() || isLoading) return;
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: "user",
@@ -72,26 +69,23 @@ export function ChatModal({ isOpen, onClose, onMatchesUpdate }: ChatModalProps) 
       timestamp: new Date(),
     }
 
-    console.log("\n\nSending userMessage ====>> ", userMessage)
+    messages.push(userMessage);
+    setMessages([...messages]);
 
-    messages.push(userMessage)
-    setMessages([...messages])
-    console.log("\n\nUpdated messages after user input: ", messages);
-    
-    setInput("")
-    setIsLoading(true)
-    setCurrentResponse("")
+    setInput("");
+    setIsLoading(true);
+    setCurrentResponse("");
 
     // Cancel any existing request
     if (abortControllerRef.current) {
-      abortControllerRef.current.abort()
+      abortControllerRef.current.abort();
     }
 
-    abortControllerRef.current = new AbortController()
+    abortControllerRef.current = new AbortController();
 
     try {
-      
-    const pythonApiUrl = process.env.PYTHON_API_URL || "http://localhost:8000"
+      const pythonApiUrl =
+        process.env.PYTHON_API_URL || "http://localhost:8000";
 
       const response = await fetch(`${pythonApiUrl}/auntie`, {
         method: "POST",
@@ -99,93 +93,58 @@ export function ChatModal({ isOpen, onClose, onMatchesUpdate }: ChatModalProps) 
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          history: messages.map((msg) => ({ role: msg.role, content: msg.content })).filter((msg) => msg.role !== "system"),
+          history: messages
+            .map((msg) => ({ role: msg.role, content: msg.content }))
+            .filter((msg) => msg.role !== "system"),
         }),
         signal: abortControllerRef.current.signal,
-      })
+      });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      console.log("\n\nResponse received: ", response, '\n\n');
-      
-
-      const reader = response.body?.getReader()
+      const reader = response.body?.getReader();
       if (!reader) {
-        throw new Error("No response body")
+        throw new Error("No response body");
       }
 
-      let accumulatedResponse = ""
+      let accumulatedResponse = "";
+      let buffer = "";
 
       while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
+        const { done, value } = await reader.read();
+        if (done) break;
 
-        const chunk = new TextDecoder().decode(value)
-        console.log("\n\nReceived chunk: >>>>>>>>>>>>> ", chunk);
+        const chunk = new TextDecoder().decode(value);
 
-        const event: StreamedResponseEvent = JSON.parse(chunk)
+        buffer += chunk;
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
 
-        console.log("\n\nEvent: >>>>>>>>>>>>> ", event);
+        for (const chunk of lines) {
+          const event: StreamedResponseEvent = JSON.parse(chunk);
+          if (event?.type == "raw_response_event" && event.delta) {
+            accumulatedResponse += event.delta;
+            setCurrentResponse(accumulatedResponse);
+          } else if (
+            event?.type === "tool_call_output_item" &&
+            event.tool_result
+          ) {
+            if (Array.isArray(event.tool_result)) {
+              onMatchesUpdate(event.tool_result);
 
-
-        if (event?.type == "raw_response_event" && event.delta) {
-          accumulatedResponse += event.delta
-          setCurrentResponse(accumulatedResponse)
-        } else if (event?.type === "tool_call_output_item" && event.tool_result) {
-          if (Array.isArray(event.tool_result)) {
-            onMatchesUpdate(event.tool_result)
-
-            const systemMessage: ChatMessage = {
-              id: `system-${Date.now()}`,
-              role: "system",
-              content: "Matches updated based on your preferences!",
-              timestamp: new Date(),
+              const systemMessage: ChatMessage = {
+                id: `system-${Date.now()}`,
+                role: "system",
+                content: "Matches updated based on your preferences!",
+                timestamp: new Date(),
+              };
+              messages.push(systemMessage);
+              setMessages([...messages]);
             }
-            messages.push(systemMessage)
-            setMessages([...messages])
           }
-        } else if (event?.type === "guardrail_triggered") {
-          const assistantMessage: ChatMessage = {
-            id: `assistant-${Date.now()}`,
-            role: "assistant",
-            content: event?.message as string,
-            timestamp: new Date(),
-          }
-
-          messages.push(assistantMessage)
-          setMessages([...messages])
         }
-        
-        // const lines = chunk.split("\n").filter((line) => line.trim())
-
-        // for (const line of lines) {
-        //   try {
-        //     const data = JSON.parse(line)
-
-        //     if (data.type === "raw_response_event" && data.delta) {
-        //       accumulatedResponse += data.delta
-        //       setCurrentResponse(accumulatedResponse)
-        //     } else if (data.type === "run_item_stream_event" && data.tool_result) {
-        //       // Handle tool call results - update matches
-        //       if (Array.isArray(data.tool_result)) {
-        //         onMatchesUpdate(data.tool_result)
-
-        //         // Add a system message to indicate matches were updated
-        //         const systemMessage: ChatMessage = {
-        //           id: `system-${Date.now()}`,
-        //           role: "system",
-        //           content: "✨ Matches updated based on your preferences!",
-        //           timestamp: new Date(),
-        //         }
-        //         setMessages((prev) => [...prev, systemMessage])
-        //       }
-        //     }
-        //   } catch (parseError) {
-        //     console.warn("Failed to parse streaming data:", parseError)
-        //   }
-        // }
       }
 
       // Add the complete assistant response
@@ -195,31 +154,29 @@ export function ChatModal({ isOpen, onClose, onMatchesUpdate }: ChatModalProps) 
           role: "assistant",
           content: accumulatedResponse,
           timestamp: new Date(),
-        }
-        messages.push(assistantMessage)
-        setMessages([...messages])
+        };
+        messages.push(assistantMessage);
+        setMessages([...messages]);
       }
-
-      console.log("==================\n\nFinal messages after response: ", messages, "\n\n==================");
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
-        console.log("Request was aborted")
-        return
+        console.log("Request was aborted");
+        return;
       }
 
-      console.error("Chat error:", error)
+      console.error("Chat error:", error);
       const errorMessage: ChatMessage = {
         id: `error-${Date.now()}`,
         role: "assistant",
         content: "Sorry, I encountered an error. Please try again.",
         timestamp: new Date(),
-      }
-      messages.push(errorMessage)
-      setMessages([...messages])
+      };
+      messages.push(errorMessage);
+      setMessages([...messages]);
     } finally {
-      setIsLoading(false)
-      setCurrentResponse("")
-      abortControllerRef.current = null
+      setIsLoading(false);
+      setCurrentResponse("");
+      abortControllerRef.current = null;
     }
   }
 
