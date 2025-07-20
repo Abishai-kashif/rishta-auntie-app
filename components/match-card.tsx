@@ -1,12 +1,8 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { MapPin, User } from "lucide-react"
-import type { Match } from "@/app/page"
-
-interface MatchCardProps {
-  match: Match
-}
+import { MapPin, User } from "lucide-react";
+import { MatchCardProps } from "@/type";
 
 export function MatchCard({ match }: MatchCardProps) {
   const getInitials = (name: string) => {

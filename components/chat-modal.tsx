@@ -8,29 +8,17 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Send, Bot, User, Sparkles } from "lucide-react"
-import type { Match } from "@/app/page"
+import type {
+  ChatMessage,
+  ChatModalProps,
+  StreamedResponseEvent,
+} from "@/type";
 
-interface ChatMessage {
-  id: string
-  role: "user" | "assistant" | "system"
-  content: string
-  timestamp: Date
-}
-
-interface StreamedResponseEvent {
-  type: "raw_response_event" | "tool_call_output_item" | "guardrail_triggered"
-  message?: string
-  delta?: string
-  tool_result?: Match[]
-}
-
-interface ChatModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onMatchesUpdate: (matches: Match[]) => void
-}
-
-export function ChatModal({ isOpen, onClose, onMatchesUpdate }: ChatModalProps) {
+export function ChatModal({
+  isOpen,
+  onClose,
+  onMatchesUpdate,
+}: ChatModalProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: "1",
@@ -39,35 +27,37 @@ export function ChatModal({ isOpen, onClose, onMatchesUpdate }: ChatModalProps) 
         "Assalam-o-Alaikum! I am your Rishta Auntie. Tell me what kind of partner you are looking for, and I will help you find the perfect match!",
       timestamp: new Date(),
     },
-  ])
-  const [input, setInput] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [currentResponse, setCurrentResponse] = useState("")
-  const scrollAreaRef = useRef<HTMLDivElement>(null)
-  const abortControllerRef = useRef<AbortController | null>(null)
+  ]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentResponse, setCurrentResponse] = useState("");
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const scrollToBottom = () => {
     if (scrollAreaRef.current) {
-      const scrollContainer = scrollAreaRef.current.querySelector("[data-radix-scroll-area-viewport]")
+      const scrollContainer = scrollAreaRef.current.querySelector(
+        "[data-radix-scroll-area-viewport]"
+      );
       if (scrollContainer) {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
       }
     }
-  }
+  };
 
   useEffect(() => {
-    scrollToBottom()
-  }, [messages, currentResponse])
+    scrollToBottom();
+  }, [messages, currentResponse]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (!input.trim() || isLoading) return;
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: "user",
       content: input.trim(),
       timestamp: new Date(),
-    }
+    };
 
     messages.push(userMessage);
     setMessages([...messages]);
@@ -178,19 +168,19 @@ export function ChatModal({ isOpen, onClose, onMatchesUpdate }: ChatModalProps) 
       setCurrentResponse("");
       abortControllerRef.current = null;
     }
-  }
+  };
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
-    })
-  }
+    });
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md h-[600px] flex flex-col p-0">
+      <DialogContent className="sm:max-w-md h-screen sm:h-[500px] flex flex-col p-0">
         <DialogHeader className="px-6 py-4 border-b bg-gradient-to-r from-pink-500 to-purple-600 text-white">
           <DialogTitle className="flex items-center space-x-2">
             <Bot className="h-5 w-5" />
@@ -202,29 +192,42 @@ export function ChatModal({ isOpen, onClose, onMatchesUpdate }: ChatModalProps) 
         <ScrollArea ref={scrollAreaRef} className="flex-1 px-4 py-4">
           <div className="space-y-4">
             {messages.map((message) => (
-              <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div
+                key={message.id}
+                className={`flex ${
+                  message.role === "user" ? "justify-end" : "justify-start"
+                }`}
+              >
                 <div
                   className={`max-w-[80%] rounded-lg px-3 py-2 ${
                     message.role === "user"
                       ? "bg-pink-600 text-white"
                       : message.role === "system"
-                        ? "bg-green-100 text-green-800 border border-green-200"
-                        : "bg-gray-100 text-gray-900"
+                      ? "bg-green-100 text-green-800 border border-green-200"
+                      : "bg-gray-100 text-gray-900"
                   }`}
                 >
                   <div className="flex items-start space-x-2">
-                    {message.role === "assistant" && <Bot className="h-4 w-4 mt-0.5 flex-shrink-0" />}
-                    {message.role === "user" && <User className="h-4 w-4 mt-0.5 flex-shrink-0" />}
-                    {message.role === "system" && <Sparkles className="h-4 w-4 mt-0.5 flex-shrink-0" />}
+                    {message.role === "assistant" && (
+                      <Bot className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    )}
+                    {message.role === "user" && (
+                      <User className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    )}
+                    {message.role === "system" && (
+                      <Sparkles className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    )}
                     <div className="flex-1">
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      <p className="text-sm whitespace-pre-wrap">
+                        {message.content}
+                      </p>
                       <p
                         className={`text-xs mt-1 ${
                           message.role === "user"
                             ? "text-pink-200"
                             : message.role === "system"
-                              ? "text-green-600"
-                              : "text-gray-500"
+                            ? "text-green-600"
+                            : "text-gray-500"
                         }`}
                       >
                         {formatTime(message.timestamp)}
@@ -242,7 +245,9 @@ export function ChatModal({ isOpen, onClose, onMatchesUpdate }: ChatModalProps) 
                   <div className="flex items-start space-x-2">
                     <Bot className="h-4 w-4 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
-                      <p className="text-sm whitespace-pre-wrap">{currentResponse}</p>
+                      <p className="text-sm whitespace-pre-wrap">
+                        {currentResponse}
+                      </p>
                       <div className="flex items-center space-x-1 mt-1">
                         <div className="flex space-x-1">
                           <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"></div>
@@ -306,5 +311,5 @@ export function ChatModal({ isOpen, onClose, onMatchesUpdate }: ChatModalProps) 
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
