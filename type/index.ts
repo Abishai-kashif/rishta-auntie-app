@@ -3,29 +3,33 @@ export interface Match {
 	age: number;
 	location: string;
 	interests: string[];
-	avatar?: string;
+	imageUrl?: string;
 }
 
 export interface ChatMessage {
-  id: string
-  role: "user" | "assistant" | "system"
-  content: string
-  timestamp: Date
+	id: string;
+	role: "user" | "assistant" | "system";
+	content: string;
+	timestamp: Date;
 }
 
 export interface StreamedResponseEvent {
-  type: "raw_response_event" | "tool_call_output_item" | "guardrail_triggered"
-  message?: string
-  delta?: string
-  tool_result?: Match[]
+	type: "raw_response_event" | "tool_call_output_item" | "guardrail_triggered";
+	message?: string;
+	delta?: string;
+	tool_result?: Match[];
 }
 
 export interface ChatModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onMatchesUpdate: (matches: Match[]) => void
+	isOpen: boolean;
+	onClose: () => void;
+	onMatchesUpdate: (matches: Match[]) => void;
 }
 
 export interface MatchCardProps {
 	match: Match;
+}
+
+export interface MatchRespones {
+	users: Match[];
 }

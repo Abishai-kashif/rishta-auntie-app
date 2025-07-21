@@ -18,11 +18,15 @@ export function MatchCard({ match }: MatchCardProps) {
       <CardHeader className="pb-3">
         <div className="flex items-center space-x-3">
           <Avatar className="h-12 w-12">
-            <AvatarImage src={match.avatar || "/placeholder.svg"} alt={match.name} />
-            <AvatarFallback className="bg-pink-100 text-pink-700">{getInitials(match.name)}</AvatarFallback>
+            <AvatarImage src={match?.imageUrl} alt={match.name} />
+            <AvatarFallback className="bg-pink-100 text-pink-700">
+              {getInitials(match.name)}
+            </AvatarFallback>
           </Avatar>
           <div>
-            <h3 className="font-semibold text-lg text-gray-900">{match.name}</h3>
+            <h3 className="font-semibold text-lg text-gray-900">
+              {match.name}
+            </h3>
             <div className="flex items-center text-gray-500 text-sm space-x-3">
               <div className="flex items-center space-x-1">
                 <User className="h-3 w-3" />
@@ -41,7 +45,11 @@ export function MatchCard({ match }: MatchCardProps) {
           <p className="text-sm text-gray-600 mb-2">Interests:</p>
           <div className="flex flex-wrap gap-1">
             {match.interests.map((interest, index) => (
-              <Badge key={index} variant="secondary" className="text-xs bg-pink-50 text-pink-700 hover:bg-pink-100">
+              <Badge
+                key={index}
+                variant="secondary"
+                className="text-xs bg-pink-50 text-pink-700 hover:bg-pink-100"
+              >
                 {interest}
               </Badge>
             ))}
@@ -49,5 +57,5 @@ export function MatchCard({ match }: MatchCardProps) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
